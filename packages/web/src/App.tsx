@@ -15,8 +15,7 @@ export default function App() {
         <div className="flex items-center gap-2">
           <span className="h-2 w-2 rounded-full bg-sky-500" />
           <span className="text-sm font-semibold tracking-wide">aiops-cockpit</span>
-        </div>
-        <span className="text-xs text-zinc-600">phase 1 · ui shell · mock data</span>
+        </div>          <span className="text-xs text-zinc-600">pinch = zoom · wrist x = rotate · point = select</span>
       </header>
 
       <div className="flex min-h-0 flex-1">
