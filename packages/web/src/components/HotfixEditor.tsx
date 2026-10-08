@@ -1,4 +1,9 @@
-import Editor from "@monaco-editor/react";
+import Editor, { loader } from "@monaco-editor/react";
+
+// Self-host Monaco from public/monaco (copied from the monaco-editor package
+// via `pnpm --filter @aiops/web setup:monaco`) instead of the public CDN, so
+// the editor works offline and behind firewalls.
+loader.config({ paths: { vs: "/monaco" } });
 
 const SAMPLE_DIFF = `--- a/deploy/worker-queue.yaml
 +++ b/deploy/worker-queue.yaml
