@@ -1,8 +1,12 @@
+import { lazy, Suspense } from "react";
 import AgentPanel from "./components/AgentPanel";
-import HotfixEditor from "./components/HotfixEditor";
 import NodeMap from "./components/NodeMap";
 import TelemetryPanel from "./components/TelemetryPanel";
 import Terminal from "./components/Terminal";
+
+// Lazy so the bundled Monaco runtime lands in its own chunk instead of the
+// main bundle.
+const HotfixEditor = lazy(() => import("./components/HotfixEditor"));
 
 export default function App() {
   return (
@@ -25,7 +29,13 @@ export default function App() {
 
       <div className="flex h-[220px] shrink-0">
         <Terminal />
-        <HotfixEditor />
+        <Suspense fallback={
+          <section className="flex min-w-0 flex-1 flex-col border-t border-l border-zinc-800 bg-zinc-950">
+            <div className="flex-1 p-4 text-sm text-zinc-600">loading editor…</div>
+          </section>
+        }>
+          <HotfixEditor />
+        </Suspense>
       </div>
     </div>
   );
