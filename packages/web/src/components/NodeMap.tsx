@@ -3,6 +3,7 @@ import type { ThreeEvent } from "@react-three/fiber";
 import { Grid, Html, Line, OrbitControls } from "@react-three/drei";
 import { useStore } from "../store";
 import type { NodeStatus, TopoNode } from "../types";
+import GestureControl from "./GestureControl";
 
 const STATUS_COLOR: Record<NodeStatus, string> = {
   healthy: "#22c55e",
@@ -28,7 +29,7 @@ function NodeShape({ node }: { node: TopoNode }) {
 
   return (
     <group position={node.position} onClick={handleSelect}>
-      <mesh>
+      <mesh userData={{ nodeId: node.id }}>
         <Geometry kind={node.kind} />
         <meshStandardMaterial
           color={color}
@@ -139,6 +140,7 @@ export default function NodeMap() {
         minDistance={3}
         maxDistance={30}
       />
+      <GestureControl />
     </Canvas>
   );
 }

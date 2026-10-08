@@ -10,6 +10,7 @@
     "setup:monaco": "node -e \"require('fs').cpSync('node_modules/monaco-editor/min/vs','public/monaco',{recursive:true})\""
   },
   "dependencies": {
+    "@mediapipe/tasks-vision": "^1.1.0",
     "@monaco-editor/react": "^4.7.0",
     "@react-three/drei": "^10.7.9",
     "@react-three/fiber": "^9.8.1",
