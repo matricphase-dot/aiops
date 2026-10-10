@@ -1,9 +1,9 @@
 import { useEffect, useRef } from "react";
 
 const LINES = [
-  "[boot] aiops-cockpit v0.1.0 — phase 1 (mock telemetry)",
-  "[telemetry] link: MOCK — socket.io connects in phase 3",
-  "[topology] 5 nodes / 5 edges loaded from mockSnapshot",
+  "[boot] aiops-cockpit v0.1.0 — phase 3 (live telemetry)",
+  "[telemetry] link: socket.io → localhost:8787 (every 2s)",
+  "[topology] mockSnapshot shown until first live snapshot arrives",
   "[agent] idle — graph ships in phase 4",
   "[safety] allowlist + audit log land in phase 5",
   "[hint] drag to orbit · scroll to zoom · click a node",

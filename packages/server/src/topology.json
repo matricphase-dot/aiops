@@ -1,0 +1,14 @@
+{
+  "hosts": [{ "id": "host/local-dev", "label": "local-dev" }],
+  "containerTargets": [
+    { "id": "container/api-gateway", "label": "api-gateway", "match": "^api-gateway$" },
+    { "id": "container/worker-queue", "label": "worker-queue", "match": "^worker-queue$" }
+  ],
+  "cloud": [{ "id": "cloud/aws-ecs-prod", "label": "aws-ecs-prod", "aws": true }],
+  "edges": [
+    { "source": "host/local-dev", "target": "container/api-gateway" },
+    { "source": "host/local-dev", "target": "container/worker-queue" },
+    { "source": "container/api-gateway", "target": "cloud/aws-ecs-prod" },
+    { "source": "container/worker-queue", "target": "cloud/aws-ecs-prod" }
+  ]
+}
