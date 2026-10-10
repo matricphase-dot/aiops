@@ -43,6 +43,8 @@ const defs = [
   },
 ] satisfies Omit<TopoNode, "position">[];
 
+// Phase 3: still the store's initial value so the UI renders before the first
+// socket event lands; socket.ts replaces it with live data on connect.
 export const mockSnapshot: TelemetrySnapshot = {
   ts: Date.now(),
   nodes: defs.map((def, i) => ({ ...def, position: circle(i, defs.length) })),

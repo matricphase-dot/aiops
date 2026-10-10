@@ -1,4 +1,5 @@
 import { useStore } from "../store";
+import { socket } from "../socket";
 import type { NodeStatus } from "../types";
 
 const DOT: Record<NodeStatus, string> = {
@@ -11,6 +12,7 @@ export default function TelemetryPanel() {
   const snapshot = useStore((s) => s.snapshot);
   const selectedNodeId = useStore((s) => s.selectedNodeId);
   const selectNode = useStore((s) => s.selectNode);
+  const connected = socket.connected;
 
   return (
     <aside className="flex h-full w-[280px] shrink-0 flex-col border-r border-zinc-800 bg-zinc-950">
@@ -18,8 +20,14 @@ export default function TelemetryPanel() {
         <h1 className="text-xs font-semibold tracking-[0.2em] text-zinc-400">
           TELEMETRY
         </h1>
-        <span className="rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-500 ring-1 ring-amber-500/30">
-          MOCK
+        <span
+          className={
+            connected
+              ? "rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400 ring-1 ring-emerald-500/30"
+              : "rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-500 ring-1 ring-amber-500/30"
+          }
+        >
+          {connected ? "LIVE" : "MOCK"}
         </span>
       </header>
 
