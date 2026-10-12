@@ -18,6 +18,8 @@ export default function AgentPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!socket) return; // no token — cockpit is behind LoginPage, no socket
+    const s = socket; // local alias so the cleanup closure sees a non-null socket
     const onToken = (tok: string) => {
       setMessages((m) => {
         const last = m[m.length - 1];
@@ -39,13 +41,13 @@ export default function AgentPanel() {
       setMessages((m) => [...m, { role: "assistant", text: `⚠ ${msg}` }]);
     };
 
-    socket.on("agent:token", onToken);
-    socket.on("agent:done", onDone);
-    socket.on("agent:error", onError);
+    s.on("agent:token", onToken);
+    s.on("agent:done", onDone);
+    s.on("agent:error", onError);
     return () => {
-      socket.off("agent:token", onToken);
-      socket.off("agent:done", onDone);
-      socket.off("agent:error", onError);
+      s.off("agent:token", onToken);
+      s.off("agent:done", onDone);
+      s.off("agent:error", onError);
     };
   }, []);
 
@@ -55,7 +57,7 @@ export default function AgentPanel() {
 
   const send = () => {
     const prompt = draft.trim();
-    if (!prompt || running) return;
+    if (!prompt || running || !socket) return;
     setMessages((m) => [
       ...m,
       { role: "user", text: prompt },

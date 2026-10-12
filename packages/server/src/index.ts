@@ -6,10 +6,13 @@ import { attachAgent } from "./agent/runner.js";
 import { createCollector } from "./collect.js";
 import { emitSnapshots } from "./loop.js";
 import { installAuth } from "./auth.js";
+import { installHttpAuth } from "./http-auth.js";
 import { SOCKET_PORT } from "./config.js";
 
 const app = express();
 app.use(cors());
+app.use(express.json({ limit: "256kb" }));
+installHttpAuth(app); // /api/login · /api/logout · /api/me
 app.get("/health", (_req, res) => res.json({ ok: true }));
 
 const httpServer = createServer(app);
@@ -41,5 +44,10 @@ io.on("connection", (socket) => {
 httpServer.listen(SOCKET_PORT, () => {
   console.log(
     `[telemetry] listening on :${SOCKET_PORT} — ${collector.describe()}`,
+  );
+  console.log(
+    process.env.ADMIN_EMAIL && process.env.ADMIN_PASSWORD
+      ? `[http-auth] login route enabled for ${process.env.ADMIN_EMAIL}`
+      : "[http-auth] ADMIN_EMAIL/ADMIN_PASSWORD unset — /api/login will deny all",
   );
 });

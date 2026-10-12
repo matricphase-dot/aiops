@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@aiops/shared": "workspace:*",
+    "@anthropic-ai/sdk": "^0.133.0",
     "@aws-sdk/client-ecs": "^3.500.0",
     "cors": "^2.8.5",
     "dockerode": "^4.0.2",
