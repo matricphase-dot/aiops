@@ -16,6 +16,8 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: true } });
 
 // Startup guard — production must never boot with auth off.
+// Verified by inspection only — exercising this kills the process.
+// Re-verify manually before the first production deploy.
 if (process.env.NODE_ENV === "production" && process.env.AUTH_DISABLED === "true") {
   console.error("[auth] FATAL: AUTH_DISABLED=true is not allowed in production");
   process.exit(1);
