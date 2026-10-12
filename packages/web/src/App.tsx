@@ -1,4 +1,6 @@
 import { lazy, Suspense } from "react";
+import { getToken } from "./auth";
+import LoginPage from "./components/LoginPage";
 import AgentPanel from "./components/AgentPanel";
 import NodeMap from "./components/NodeMap";
 import TelemetryPanel from "./components/TelemetryPanel";
@@ -9,6 +11,10 @@ import Terminal from "./components/Terminal";
 const HotfixEditor = lazy(() => import("./components/HotfixEditor"));
 
 export default function App() {
+  const devToken = import.meta.env.VITE_DEV_TOKEN;
+  const hasAuth = Boolean(getToken() || devToken);
+  if (!hasAuth) return <LoginPage />;
+
   return (
     <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950 text-zinc-200">
       <header className="flex h-10 shrink-0 items-center justify-between border-b border-zinc-800 px-4">

@@ -12,7 +12,7 @@ export default function TelemetryPanel() {
   const snapshot = useStore((s) => s.snapshot);
   const selectedNodeId = useStore((s) => s.selectedNodeId);
   const selectNode = useStore((s) => s.selectNode);
-  const connected = socket.connected;
+  const connected = socket?.connected ?? false;
 
   return (
     <aside className="flex h-full w-[280px] shrink-0 flex-col border-r border-zinc-800 bg-zinc-950">
