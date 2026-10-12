@@ -125,7 +125,7 @@ async function runPlannedSteps(
   registry: ReturnType<typeof buildRegistry>,
 ): Promise<boolean> {
   const steps = planned.slice(0, 5); // hard cap: at most 5 planned steps
-  await stream(socket, `\n[planner] ${steps.length}-step plan via ${steps.map((s) => s.tool).join(" → ")}\n`);
+  await stream(socket, `\n[planner] ${planned.length}-step plan via ${steps.map((s) => s.tool).join(" → ")}\n`);
 
   let executedAny = false;
 
