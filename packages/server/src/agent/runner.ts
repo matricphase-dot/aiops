@@ -1,53 +1,81 @@
 import type { Server, Socket } from "socket.io";
 import type { Collector } from "../collect.js";
-import { buildTools } from "./tools.js";
+import { buildRegistry, invokeTool } from "./tools.js";
+import { audit } from "../audit.js";
 
 /**
- * Deterministic plan→observe→diagnose→propose run loop. Streams text tokens
- * back to the client via agent:token / agent:Done events. Not LLM-backed yet
- * (that needs the phase 5 safety layer around any model-in-the-loop use).
+ * Agent run loop. Gated by the Phase 5 safety layer:
+ *   - unauthenticated sockets are rejected before anything streams
+ *   - every agent run start is audited
+ *   - every tool call goes through invokeTool() (the single choke point that
+ *     schema-checks args, enforces the destructive gate, and audits the call)
+ * The streaming format is unchanged from Phase 4: plan header, then
+ * agent:token chunks (48 chars, 24 ms apart), then agent:done.
  */
 export function attachAgent(
   _io: Server,
   socket: Socket,
   collector: Collector,
 ): void {
+  const registry = buildRegistry(collector);
+
   socket.on("agent:run", async (raw: unknown) => {
-    const goal =
+    const promptRaw =
       typeof raw === "object" && raw && typeof (raw as { prompt?: unknown }).prompt === "string"
-        ? (raw as { prompt: string }).prompt.trim()
+        ? (raw as { prompt: string }).prompt
         : "";
-    if (!goal) {
+    const prompt = promptRaw.trim();
+
+    // --- safety gate: no identity, no run ---
+    const user = socket.data.user;
+    if (!user) {
+      socket.emit("agent:error", "unauthorized");
+      return;
+    }
+    await audit.write({
+      ts: Date.now(),
+      userId: user.id,
+      action: "agent.run",
+      detail: prompt.slice(0, 500),
+      result: "started",
+    });
+
+    if (!prompt) {
       socket.emit("agent:error", "agent:run requires { prompt: string }");
+      await audit.write({
+        ts: Date.now(),
+        userId: user.id,
+        action: "agent.run",
+        detail: "missing prompt",
+        result: "error",
+      });
       return;
     }
 
-    const tools = buildTools(collector);
     const steps = ["observe", "diagnose", "propose"] as const;
 
     try {
-      const snapshot = await collector.snapshot();
-      const headers: string[] = [`goal: ${goal}`, "plan: " + steps.join(" → "), ""];
-
-      // Stream the header, then each tool's contribution as a paragraph.
-      const buffer = headers.join("\n") + "\n";
-      await stream(socket, buffer);
+      const headers: string[] = [`goal: ${prompt}`, "plan: " + steps.join(" → "), ""];
+      await stream(socket, headers.join("\n") + "\n");
 
       for (const step of steps) {
-        const tool = tools.find((t) => t.name === step)!;
-        const result = (await tool.run({ goal, snapshot })) as string;
-        const chunk = `\n[${step}]\n${result}\n`;
-        await stream(socket, chunk);
+        const result = (await invokeTool(step, {}, { userId: user.id }, registry)) as string;
+        await stream(socket, `\n[${step}]\n${result}\n`);
       }
 
       await stream(socket, "\n=== run complete ===");
       socket.emit("agent:done");
     } catch (err) {
-      console.warn(
-        "[agent] run failed:",
-        err instanceof Error ? err.message : err,
-      );
-      socket.emit("agent:error", "agent run failed — check server logs");
+      const msg = err instanceof Error ? err.message : String(err);
+      console.warn("[agent] run failed:", msg);
+      await audit.write({
+        ts: Date.now(),
+        userId: user.id,
+        action: "agent.run",
+        detail: msg,
+        result: "error",
+      });
+      socket.emit("agent:error", msg);
     }
   });
 }
