@@ -5,3 +5,7 @@ dist
 .env.*
 !.env.example
 *.log
+
+proposals/
+
+packages/server/.env

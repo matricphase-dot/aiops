@@ -14,8 +14,10 @@
     "@aws-sdk/client-ecs": "^3.500.0",
     "cors": "^2.8.5",
     "dockerode": "^4.0.2",
+    "dotenv": "^18.0.7",
     "express": "^4.21.0",
     "jsonwebtoken": "^9.0.3",
+    "nanoid": "^6.0.2",
     "socket.io": "^4.8.0",
     "systeminformation": "^5.23.0",
     "zod": "^4.6.5"
