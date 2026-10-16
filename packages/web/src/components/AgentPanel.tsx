@@ -71,9 +71,19 @@ export default function AgentPanel() {
   return (
     <aside className="flex h-full w-[380px] shrink-0 flex-col border-l border-zinc-800 bg-zinc-950">
       <header className="flex items-center justify-between border-b border-zinc-800 px-4 py-3">
-        <h1 className="text-xs font-semibold tracking-[0.2em] text-zinc-400">
-          AGENT
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-xs font-semibold tracking-[0.2em] text-zinc-400">
+            AGENT
+          </h1>
+          <button
+            onClick={() =>
+              window.dispatchEvent(new CustomEvent("aiops:open-proposals"))
+            }
+            className="rounded bg-zinc-800 px-2 py-0.5 text-[10px] font-semibold text-zinc-300 ring-1 ring-zinc-700 hover:bg-zinc-700"
+          >
+            Proposals
+          </button>
+        </div>
         {running && (
           <span className="animate-pulse text-[10px] font-semibold text-sky-400">
             running…

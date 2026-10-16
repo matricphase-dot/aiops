@@ -8,7 +8,7 @@ import { audit } from "./audit.js";
  *
  * Security properties:
  *  - failures ALWAYS return the same "invalid credentials" message (no user
- *    enumeration — a wrong email and a wrong password look identical)
+ *    enumeration â€” a wrong email and a wrong password look identical)
  *  - credential check via strict string comparison; not timing-hardened,
  *    but no user enumeration is possible from the response body
  *  - /api/login is rate limited to 5 attempts / IP / minute, in-memory
@@ -78,7 +78,7 @@ export function installHttpAuth(app: Express): void {
 
     // Same payload shape as the socket auth middleware consumes (sub/email/roles).
     const token = jwt.sign(
-      { sub: email, email, roles: ["operator", "viewer"] },
+      { sub: email, email, roles: ["operator", "viewer", "approver"] },
       process.env.JWT_SECRET as string,
       { expiresIn: "8h" },
     );
@@ -93,7 +93,7 @@ export function installHttpAuth(app: Express): void {
   });
 
   app.post("/api/logout", (_req: Request, res: Response) => {
-    // Stateless JWT — the client drops the token from sessionStorage, the
+    // Stateless JWT â€” the client drops the token from sessionStorage, the
     // server has nothing to invalidate (no server-side session store).
     void audit.write({
       ts: Date.now(),
