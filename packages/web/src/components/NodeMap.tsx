@@ -42,12 +42,11 @@ function NodeMesh({ node }: { node: TopoNode }) {
       onClick={(e) => { e.stopPropagation(); select(node.id); }}
     >
       {geo}
-      <meshStandardMaterial
-        color={COLOR[node.status]}
-        emissive={COLOR[node.status]}
-        emissiveIntensity={node.status === "critical" ? 1.4 : 0.35}
-        roughness={0.4}
-        metalness={0.6}
+      {/* meshBasicMaterial ignores lights and renders pure color, making it glow like neon */}
+      <meshBasicMaterial
+        color={COLOR[node.status] || COLOR.unknown}
+        transparent
+        opacity={0.85}
       />
     </mesh>
   );
