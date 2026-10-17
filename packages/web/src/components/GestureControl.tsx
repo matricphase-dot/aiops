@@ -33,7 +33,6 @@ function pinchDistance(lm: NormalizedLandmark[]): number {
 }
 
 function indexExtendedMiddleCurled(lm: NormalizedLandmark[]): boolean {
-  // Extended finger: tip farther from the wrist than the middle joint.
   const d = (a: NormalizedLandmark, b: NormalizedLandmark) =>
     Math.hypot(a.x - b.x, a.y - b.y);
   const wrist = lm[0];
@@ -100,7 +99,6 @@ export default function GestureControl() {
       if (cancelled || !landmarker || !video) return;
       raf = requestAnimationFrame(tick);
 
-      // A single bad frame must not kill the loop.
       let result;
       try {
         if (video.readyState < 2) return;
@@ -146,7 +144,7 @@ export default function GestureControl() {
           : undefined;
         if (nodeId) {
           lastPointAt = performance.now();
-          useStore.getState().selectNode(nodeId);
+          useStore.getState().selectNode(nodeId); // or select(nodeId) depending on your store
         }
       }
     }
@@ -160,18 +158,18 @@ export default function GestureControl() {
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
-      stopCamera();
-      landmarker?.close();
-      setStatusBoth("error");
+      
+      // CRITICAL FIX: Defer MediaPipe and stream cleanup to the next tick.
+      // Doing this synchronously blocks React 19's unmounting process and throws a WebGL error.
+      setTimeout(() => {
+        stopCamera();
+        landmarker?.close();
+      }, 0);
     };
   }, [camera, scene]);
 
   const pill = PILL[status];
 
-  // GestureControl lives in R3F's own reconciler root, so react-dom portals
-  // don't work here. drei <Html> bridges DOM into an overlay over the canvas;
-  // anchoring it at the bottom-right corner puts the pill inside the canvas
-  // area (the inner div's right-0/bottom-0 offsets do the rest).
   return (
     <Html
       prepend={false}
