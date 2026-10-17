@@ -1,60 +1,70 @@
-import { lazy, Suspense, useEffect, useState } from "react";
-import { getToken } from "./auth";
-import LoginPage from "./components/LoginPage";
-import ProposalsDrawer from "./components/ProposalsDrawer";
-import AgentPanel from "./components/AgentPanel";
+import { useState, useEffect } from "react";
+import { Canvas } from "@react-three/fiber";
+import { OrbitControls, Stars } from "@react-three/drei";
 import NodeMap from "./components/NodeMap";
 import TelemetryPanel from "./components/TelemetryPanel";
+import AgentPanel from "./components/AgentPanel";
 import Terminal from "./components/Terminal";
-
-// Lazy so the bundled Monaco runtime lands in its own chunk instead of the
-// main bundle.
-const HotfixEditor = lazy(() => import("./components/HotfixEditor"));
+import HotfixEditor from "./components/HotfixEditor";
+import GestureControl from "./components/GestureControl";
+import ProposalsDrawer from "./components/ProposalsDrawer";
+import LoginPage from "./components/LoginPage";
+import { getToken } from "./auth";
+import { isDemoMode } from "./socket";
 
 export default function App() {
   const [showProposals, setShowProposals] = useState(false);
 
-  // AgentPanel's "Proposals" button opens the drawer via a window event so
-  // the panel stays decoupled from App state.
+  // Listen for the event dispatched by AgentPanel to open the drawer
   useEffect(() => {
-    const open = () => setShowProposals(true);
-    window.addEventListener("aiops:open-proposals", open);
-    return () => window.removeEventListener("aiops:open-proposals", open);
+    const handler = () => setShowProposals(true);
+    window.addEventListener("aiops:open-proposals", handler);
+    return () => window.removeEventListener("aiops:open-proposals", handler);
   }, []);
 
   const devToken = import.meta.env.VITE_DEV_TOKEN;
-  const hasAuth = Boolean(getToken() || devToken);
-  if (!hasAuth) return <LoginPage />;
+  const hasAuth = isDemoMode || Boolean(getToken() || devToken);
+
+  if (!hasAuth) {
+    return <LoginPage />;
+  }
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-zinc-950 text-zinc-200">
-      <header className="flex h-10 shrink-0 items-center justify-between border-b border-zinc-800 px-4">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-sky-500" />
-          <span className="text-sm font-semibold tracking-wide">aiops-cockpit</span>
-        </div>          <span className="text-xs text-zinc-600">pinch = zoom · wrist x = rotate · point = select</span>
-      </header>
+    <>
+      <div className="grid h-full grid-cols-[280px_1fr_380px] grid-rows-[1fr_220px]">
+        <aside className="row-span-2 border-r border-neutral-800 p-3 overflow-auto">
+          <TelemetryPanel />
+        </aside>
 
-      <div className="flex min-h-0 flex-1">
-        <TelemetryPanel />
-        <main className="relative min-w-0 flex-1 overflow-hidden">
-          <NodeMap />
+        <main className="relative">
+          {/* CRITICAL: NodeMap and GestureControl MUST be inside <Canvas> */}
+          <Canvas camera={{ position: [0, 6, 16], fov: 55 }}>
+            <color attach="background" args={["#050505"]} />
+            <ambientLight intensity={0.4} />
+            <pointLight position={[10, 10, 10]} intensity={1.2} />
+            <Stars radius={100} depth={50} count={2000} factor={3} />
+            <NodeMap />
+            <OrbitControls enablePan enableZoom enableRotate />
+            <GestureControl />
+          </Canvas>
+          
+          <div className="pointer-events-none absolute left-3 top-3 text-xs text-neutral-500">
+            gestures: pinch = zoom · wrist x = rotate · point = select
+          </div>
         </main>
-        <AgentPanel />
-      </div>
 
-      <div className="flex h-[220px] shrink-0">
-        <Terminal />
-        <Suspense fallback={
-          <section className="flex min-w-0 flex-1 flex-col border-t border-l border-zinc-800 bg-zinc-950">
-            <div className="flex-1 p-4 text-sm text-zinc-600">loading editor…</div>
-          </section>
-        }        >
+        <aside className="row-span-2 border-l border-neutral-800 flex flex-col overflow-hidden">
+          <AgentPanel />
+        </aside>
+
+        <section className="col-start-2 border-t border-neutral-800 grid grid-cols-2">
+          <Terminal />
           <HotfixEditor />
-        </Suspense>
+        </section>
       </div>
 
+      {/* Proposals Drawer overlays the whole screen when open */}
       {showProposals && <ProposalsDrawer onClose={() => setShowProposals(false)} />}
-    </div>
+    </>
   );
 }
