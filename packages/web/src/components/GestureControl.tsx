@@ -1,5 +1,4 @@
 import { useThree } from "@react-three/fiber";
-import { Html } from "@react-three/drei";
 import {
   FilesetResolver,
   HandLandmarker,
@@ -11,22 +10,13 @@ import { useStore } from "../store";
 
 type Status = "boot" | "tracking" | "no-hand" | "error";
 
-const WASM_BASE =
-  "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
-const MODEL_URL =
-  "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
+const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
+const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
 
 const PINCH_DIST = 0.06;
 const DOLLY_STEP = 0.08;
 const ORBIT_GAIN = 0.04;
 const POINT_COOLDOWN_MS = 600;
-
-const PILL: Record<Status, { dot: string; label: string }> = {
-  boot: { dot: "bg-neutral-400 animate-pulse", label: "gesture: starting…" },
-  tracking: { dot: "bg-emerald-500", label: "gesture: tracking" },
-  "no-hand": { dot: "bg-neutral-500", label: "gesture: no hand" },
-  error: { dot: "bg-red-500", label: "gesture: camera off" },
-};
 
 function pinchDistance(lm: NormalizedLandmark[]): number {
   return Math.hypot(lm[4].x - lm[8].x, lm[4].y - lm[8].y, lm[4].z - lm[8].z);
@@ -42,13 +32,6 @@ function indexExtendedMiddleCurled(lm: NormalizedLandmark[]): boolean {
 }
 
 export default function GestureControl() {
-  const [status, setStatus] = useState<Status>("boot");
-  const statusRef = useRef<Status>("boot");
-  const setStatusBoth = (s: Status) => {
-    statusRef.current = s;
-    setStatus(s);
-  };
-
   const { camera, scene } = useThree();
 
   useEffect(() => {
@@ -89,7 +72,6 @@ export default function GestureControl() {
       await video.play();
       if (cancelled) return;
 
-      setStatusBoth("no-hand");
       tick();
     }
 
@@ -109,19 +91,15 @@ export default function GestureControl() {
       }
 
       const lm = result.landmarks?.[0];
-      if (!lm) {
-        if (statusRef.current !== "no-hand") setStatusBoth("no-hand");
-        return;
-      }
-      if (statusRef.current !== "tracking") setStatusBoth("tracking");
+      if (!lm) return;
 
-      // PINCH: dolly forward along the current view direction.
+      // PINCH: dolly forward
       if (pinchDistance(lm) < PINCH_DIST) {
         const dir = camera.getWorldDirection(new THREE.Vector3());
         camera.position.addScaledVector(dir, DOLLY_STEP);
       }
 
-      // WRIST X: orbit yaw around the world origin.
+      // WRIST X: orbit
       const theta = Math.atan2(camera.position.x, camera.position.z);
       const radius = Math.hypot(camera.position.x, camera.position.z);
       const newTheta = theta + (0.5 - lm[0].x) * ORBIT_GAIN;
@@ -129,22 +107,20 @@ export default function GestureControl() {
       camera.position.z = Math.cos(newTheta) * radius;
       camera.lookAt(0, 0, 0);
 
-      // POINT: raycast through the index fingertip (NDC) and select the node.
+      // POINT: raycast
       if (indexExtendedMiddleCurled(lm) && performance.now() - lastPointAt > POINT_COOLDOWN_MS) {
         const ndc = new THREE.Vector2(
-          (1 - lm[8].x) * 2 - 1, // webcam is mirrored
+          (1 - lm[8].x) * 2 - 1,
           -(lm[8].y * 2 - 1),
         );
         raycaster.setFromCamera(ndc, camera);
         const hit = raycaster
           .intersectObjects(scene.children, true)
           .find((h) => (h.object.userData as { nodeId?: string }).nodeId);
-        const nodeId = hit
-          ? (hit.object.userData as { nodeId?: string }).nodeId
-          : undefined;
+        const nodeId = hit ? (hit.object.userData as { nodeId?: string }).nodeId : undefined;
         if (nodeId) {
           lastPointAt = performance.now();
-          useStore.getState().selectNode(nodeId); // or select(nodeId) depending on your store
+          useStore.getState().select(nodeId);
         }
       }
     }
@@ -152,15 +128,12 @@ export default function GestureControl() {
     boot().catch((err) => {
       if (cancelled) return;
       console.warn("[gesture] setup failed", err);
-      setStatusBoth("error");
     });
 
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
-      
-      // CRITICAL FIX: Defer MediaPipe and stream cleanup to the next tick.
-      // Doing this synchronously blocks React 19's unmounting process and throws a WebGL error.
+      // Defer cleanup to fix React 19 unmount crash
       setTimeout(() => {
         stopCamera();
         landmarker?.close();
@@ -168,18 +141,5 @@ export default function GestureControl() {
     };
   }, [camera, scene]);
 
-  const pill = PILL[status];
-
-  return (
-    <Html
-      prepend={false}
-      zIndexRange={[10, 0]}
-      calculatePosition={(_obj, _camera, size) => [size.width - 12, size.height - 12]}
-    >
-      <div className="pointer-events-none absolute right-0 bottom-0 flex items-center gap-2 rounded-full bg-black/60 px-3 py-1 text-xs text-neutral-300">
-        <span className={`h-2 w-2 rounded-full ${pill.dot}`} />
-        <span>{pill.label}</span>
-      </div>
-    </Html>
-  );
+  return null; // No UI overlay, removing the crash-causing <Html> tag
 }

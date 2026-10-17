@@ -15,11 +15,21 @@
 - **Hand Gestures (Optional)** - Wave your hand to control the camera via MediaPipe (pinch = zoom, wrist = rotate, point = select).
 - **Real-time Telemetry** - Live host metrics (CPU, RAM, Disk) and Docker container states via Socket.IO.
 
-## Quick Start (Docker)
+## Quick Start
 
-The fastest way to run AIOps Cockpit is with Docker. 
+**Prerequisites:** Node.js 20+ and pnpm.
 
 ```bash
+# 1. Clone the repo
 git clone https://github.com/matricphase-dot/aiops.git
 cd aiops
-docker compose up -d
+
+# 2. Install dependencies
+pnpm install
+
+# 3. Copy environment variables
+cp .env.example .env
+# (Optional: Edit .env to add your ANTHROPIC_API_KEY or AWS credentials)
+
+# 4. Start everything (frontend + backend)
+pnpm start
