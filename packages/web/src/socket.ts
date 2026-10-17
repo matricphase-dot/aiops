@@ -1,49 +1,31 @@
 import { io, type Socket } from "socket.io-client";
-import { TelemetrySnapshot } from "@aiops/shared";
+import type { ClientToServerEvents, ServerToClientEvents } from "@aiops/shared";
 import { useStore } from "./store";
 import { getToken, clearToken } from "./auth";
 
-// The Phase 3 seam: every telemetry:snapshot from the server is schema-checked
-// and pushed into the store, replacing the mock snapshot.
-//
-// Phase 6: token preference is the login-session token first, then the dev
-// env token. With neither, we don't even open a socket — the cockpit is
-// behind the LoginPage, so there is nothing to talk to yet.
+// Set to true if you want to run without a backend (uses mock data)
+export const isDemoMode = import.meta.env.VITE_DEMO_MODE === "true";
 
-let socket: Socket | null = null;
+const token = getToken() || import.meta.env.VITE_DEV_TOKEN || "";
 
-const loginToken = getToken();
-const devToken = import.meta.env.VITE_DEV_TOKEN as string | undefined;
-const token = loginToken ?? devToken;
+// Only connect if we have a token or auth is disabled on the backend
+export const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null =
+  token
+    ? io(import.meta.env.VITE_SERVER_URL ?? "http://localhost:8787", {
+        transports: ["websocket"],
+        auth: { token },
+      })
+    : null;
 
-if (!token) {
-  console.warn("[socket] no token (session or VITE_DEV_TOKEN) — connection skipped");
-} else {
-  socket = io("http://localhost:8787", {
-    auth: { token },
-  });
-
-  socket.on("telemetry:snapshot", (raw: unknown) => {
-    const parsed = TelemetrySnapshot.safeParse(raw);
-    if (!parsed.success) {
-      console.warn("[socket] bad snapshot payload, ignoring:", parsed.error.issues[0]?.message);
-      return;
-    }
-    useStore.getState().setSnapshot(parsed.data);
-  });
-
-  socket.on("connect", () => console.log("[socket] telemetry link up"));
-  socket.on("disconnect", (reason: string) =>
-    console.warn("[socket] telemetry link down:", reason),
-  );
-
-  // Expired/invalid JWT: drop the dead token and start over at the login page.
-  socket.on("connect_error", (err: Error) => {
+if (socket) {
+  socket.on("connect", () => console.log("[socket] connected", socket.id));
+  socket.on("telemetry:snapshot", (s) => useStore.getState().setSnapshot(s));
+  socket.on("agent:event", (e) => useStore.getState().pushAgent(e));
+  
+  socket.on("connect_error", (err) => {
     if (err.message === "unauthorized") {
       clearToken();
       window.location.reload();
     }
   });
 }
-
-export { socket };

@@ -26,7 +26,6 @@ export default function AgentPanel() {
         if (last?.role === "assistant" && last.text !== "__streaming__") {
           // Continuation of the streaming block already finalized below.
         }
-        // The runner streams plain tokens; we append to the last assistant msg.
         const copy = [...m];
         const lastMsg = copy[copy.length - 1];
         if (lastMsg?.role === "assistant") {
