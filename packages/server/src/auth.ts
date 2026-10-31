@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from "node:crypto";
 import jwt from "jsonwebtoken";
 import type { Server, Socket } from "socket.io";
 
@@ -14,7 +15,19 @@ export interface AuthUser {
 declare module "socket.io" {
   interface SocketData {
     user?: AuthUser;
+    /** Phase 7: set when the handshake token is the AGENT_TOKEN. */
+    isAgent?: boolean;
   }
+}
+
+/**
+ * Constant-time token comparison via SHA-256 digests: equal-length hashes
+ * mean timingSafeEqual is length-safe and no token length leaks.
+ */
+function tokenMatches(provided: string, expected: string): boolean {
+  const a = createHash("sha256").update(provided).digest();
+  const b = createHash("sha256").update(expected).digest();
+  return timingSafeEqual(a, b);
 }
 
 /**
@@ -24,6 +37,23 @@ declare module "socket.io" {
  */
 export function installAuth(io: Server): void {
   io.use(async (socket, next) => {
+    // Phase 7: a handshake token carrying AGENT_TOKEN marks the socket as a
+    // remote agent and skips the JWT path. It MUST be checked before JWT
+    // verification — the agent token is not a JWT. agent sockets get no
+    // user identity, so the runner's "no identity, no run" gate blocks them
+    // from agent:run; they may only emit agent:telemetry.
+    const agentToken = process.env.AGENT_TOKEN;
+    const provided = socket.handshake.auth?.token;
+    if (
+      typeof agentToken === "string" &&
+      agentToken.length > 0 &&
+      typeof provided === "string" &&
+      tokenMatches(provided, agentToken)
+    ) {
+      socket.data.isAgent = true;
+      return next();
+    }
+
     // Dev escape hatch: explicit, narrow, loudly announced.
     if (process.env.AUTH_DISABLED === "true") {
       socket.data.user = {

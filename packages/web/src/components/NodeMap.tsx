@@ -6,10 +6,9 @@ import { useStore } from "../store";
 import type { TopoNode } from "@aiops/shared";
 
 const COLOR: Record<TopoNode["status"], string> = {
-  ok: "#22c55e",
-  warn: "#f59e0b",
-  critical: "#ef4444",
-  unknown: "#64748b",
+  healthy: "#22c55e",
+  degraded: "#f59e0b",
+  down: "#ef4444",
 };
 
 function NodeMesh({ node }: { node: TopoNode }) {
@@ -19,7 +18,7 @@ function NodeMesh({ node }: { node: TopoNode }) {
 
   useFrame((_, delta) => {
     if (!ref.current) return;
-    const speed = node.status === "critical" ? 6 : 1.2;
+    const speed = node.status === "down" ? 6 : 1.2;
     ref.current.rotation.y += delta * speed * 0.3;
     const s = selected ? 1.4 : 1;
     ref.current.scale.lerp(new THREE.Vector3(s, s, s), 0.15);
@@ -44,7 +43,7 @@ function NodeMesh({ node }: { node: TopoNode }) {
       {geo}
       {/* meshBasicMaterial ignores lights and renders pure color, making it glow like neon */}
       <meshBasicMaterial
-        color={COLOR[node.status] || COLOR.unknown}
+        color={COLOR[node.status]}
         transparent
         opacity={0.85}
       />
