@@ -14,7 +14,7 @@
 - **Defense-in-Depth** - Append-only audit logs, prompt-injection defenses, and a strict tool allowlist. Destructive actions are disabled by default.
 - **Hand Gestures (Optional)** - Wave your hand to control the camera via MediaPipe (pinch = zoom, wrist = rotate, point = select).
 - **Real-time Telemetry** - Live host metrics (CPU, RAM, Disk) and Docker container states via Socket.IO.
-
+- **Distributed Telemetry:** Install the lightweight remote agent on any server (AWS, GCP, homelab) and securely stream its Docker and host metrics back to the central 3D cockpit.
 ## Quick Start
 
 **Prerequisites:** Node.js 20+ and pnpm.
