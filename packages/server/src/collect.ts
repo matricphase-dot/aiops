@@ -38,6 +38,8 @@ export interface CollectedNode {
     cpu?: number;
     mem?: number;
   };
+  /** Phase 7: set when the node arrived via a remote agent. */
+  isRemote?: boolean;
 }
 
 export interface Snapshot {
@@ -62,7 +64,7 @@ function circle(i: number, n: number, radius = 5): [number, number, number] {
   ];
 }
 
-function statusFromCpuMem(cpu: number, mem: number) {
+export function statusFromCpuMem(cpu: number, mem: number) {
   if (cpu >= 85 || mem >= 90) return "down" as const;
   if (cpu >= 60 || mem >= 75) return "degraded" as const;
   return "healthy" as const;

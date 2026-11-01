@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "agent": "tsx src/scripts/remote-agent.ts",
     "build": "tsc --noEmit",
     "typecheck": "tsc --noEmit"
   },
@@ -19,6 +20,7 @@
     "jsonwebtoken": "^9.0.3",
     "nanoid": "^6.0.2",
     "socket.io": "^4.8.0",
+    "socket.io-client": "^4.8.4",
     "systeminformation": "^5.23.0",
     "zod": "^4.6.5"
   },

@@ -9,6 +9,7 @@ export interface TopoNode {
   status: NodeStatus;
   position: [number, number, number];
   metrics?: { cpu?: number; mem?: number };
+  isRemote?: boolean;
 }
 
 export interface TopoEdge {

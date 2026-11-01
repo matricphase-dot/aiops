@@ -5,6 +5,10 @@ import cors from "cors";
 import express from "express";
 import { attachAgent } from "./agent/runner.js";
 import { createCollector } from "./collect.js";
+import {
+  createRemoteMergedCollector,
+  installAgentIngestion,
+} from "./agent/ingest.js";
 import { emitSnapshots } from "./loop.js";
 import { installAuth } from "./auth.js";
 import { installHttpAuth } from "./http-auth.js";
@@ -30,6 +34,9 @@ if (process.env.NODE_ENV === "production" && process.env.AUTH_DISABLED === "true
 }
 
 installAuth(io);
+// Phase 7: remote agents push telemetry into the shared registry; the
+// merged collector below folds their nodes into every telemetry:snapshot.
+installAgentIngestion(io);
 console.log(
   process.env.AUTH_DISABLED === "true"
     ? "[auth] DISABLED ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â dev only"
@@ -37,10 +44,13 @@ console.log(
 );
 
 const collector = await createCollector();
+// Phase 7: telemetry:snapshot carries remote-agent nodes merged in; the raw
+// collector stays the source of truth for the runner's tools.
+const snapshotCollector = createRemoteMergedCollector(collector);
 
 io.on("connection", (socket) => {
   console.log(`[io] client connected ${socket.id} ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â ${collector.describe()}`);
-  emitSnapshots(io, collector);
+  emitSnapshots(io, snapshotCollector);
   attachAgent(io, socket, collector);
 });
 

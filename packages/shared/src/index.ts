@@ -19,6 +19,7 @@ export const TopoNode = z.object({
       mem: z.number().min(0).max(100).optional(),
     })
     .optional(),
+  isRemote: z.boolean().optional(),
 });
 
 export const TopoEdge = z.object({
@@ -38,3 +39,21 @@ export type NodeStatus = z.infer<typeof NodeStatus>;
 export type TopoNode = z.infer<typeof TopoNode>;
 export type TopoEdge = z.infer<typeof TopoEdge>;
 export type TelemetrySnapshot = z.infer<typeof TelemetrySnapshot>;
+
+// Socket.IO event contracts, typed on both ends.
+//
+// NOTE: the agent runner streams agent:token / agent:done / agent:error
+// directly to the requesting socket; those handlers live in AgentPanel.
+// There is deliberately no push-style "agent:event" broadcast — nothing on
+// the server emits it, so it stays out of the contract.
+
+export interface ServerToClientEvents {
+  "telemetry:snapshot": (snapshot: TelemetrySnapshot) => void;
+  "agent:token": (tokenChunk: string) => void;
+  "agent:done": () => void;
+  "agent:error": (message: string) => void;
+}
+
+export interface ClientToServerEvents {
+  "agent:run": (payload: { prompt: string }) => void;
+}
