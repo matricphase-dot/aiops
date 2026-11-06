@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "agent": "tsx src/scripts/remote-agent.ts",
     "build": "tsc --noEmit",
