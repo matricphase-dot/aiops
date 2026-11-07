@@ -13,7 +13,6 @@ export const socket: Socket<ServerToClientEvents, ClientToServerEvents> | null =
 if (socket) {
   socket.on("connect", () => console.log("[socket] connected", socket.id));
   socket.on("telemetry:snapshot", (s) => useStore.getState().setSnapshot(s));
-  socket.on("agent:event", (e) => useStore.getState().pushAgent(e));
   socket.on("connect_error", (err) => {
     if (err.message === "unauthorized") { clearToken(); window.location.reload(); }
   });

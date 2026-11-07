@@ -33,6 +33,8 @@ export interface Proposal {
   preflight: Record<string, boolean> | null;
 }
 
+export type ProposalStatus = Proposal["status"];
+
 export const api = {
   createProposal: (body: { runId: string; diff: string; target?: string }) =>
     request<Proposal>("/api/proposals", { method: "POST", body: JSON.stringify(body) }),
