@@ -32,7 +32,7 @@ export default function HotfixEditor() {
       const p = await api.createProposal({
         runId: "manual-" + Date.now(),
         diff: value,
-        target: "main",
+        target: "deploy/worker-queue.yaml",
       });
       alert(`Proposal created: ${p.id}`);
     } catch (e) {

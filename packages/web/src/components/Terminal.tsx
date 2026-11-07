@@ -1,6 +1,10 @@
 import { useEffect, useRef } from "react";
+import { isDemoMode } from "../socket";
+import { DEMO_BOOT_LINES } from "../data/demo";
 
-const LINES = [
+// Demo mode shows only the product boot banner — no phase notes, no
+// localhost connection lines, nothing that reveals a dev environment.
+const DEV_LINES = [
   "[boot] aiops-cockpit v0.1.0 — phase 3 (live telemetry)",
   "[telemetry] link: socket.io → localhost:8787 (every 2s)",
   "[topology] mockSnapshot shown until first live snapshot arrives",
@@ -11,6 +15,7 @@ const LINES = [
 
 export default function Terminal() {
   const ref = useRef<HTMLDivElement>(null);
+  const lines = isDemoMode ? DEMO_BOOT_LINES : DEV_LINES;
 
   useEffect(() => {
     ref.current?.scrollTo({ top: ref.current.scrollHeight });
@@ -28,7 +33,7 @@ export default function Terminal() {
         ref={ref}
         className="flex-1 overflow-y-auto px-4 py-2 font-mono text-xs leading-relaxed text-emerald-400/90"
       >
-        {LINES.map((line, i) => (
+        {lines.map((line, i) => (
           <div key={i}>{line}</div>
         ))}
         <div>

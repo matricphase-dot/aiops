@@ -7,6 +7,7 @@ import {
 import { useEffect } from "react";
 import * as THREE from "three";
 import { useStore } from "../store";
+import { isDemoMode } from "../socket";
 
 const WASM_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task";
@@ -33,6 +34,10 @@ export default function GestureControl() {
   const { camera, scene } = useThree();
 
   useEffect(() => {
+    // Demo mode must be fully self-contained: no CDN wasm/model fetch and no
+    // webcam permission prompt in the middle of a pitch recording.
+    if (isDemoMode) return;
+
     let cancelled = false;
     let raf = 0;
     let landmarker: HandLandmarker | null = null;

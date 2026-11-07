@@ -49,6 +49,10 @@ export async function callClaude(opts: {
 
   if (choice.tool_calls) {
     for (const tc of choice.tool_calls) {
+      // tool_calls is a union of function and custom calls; only schema'd
+      // function calls carry a name + JSON arguments, and only those can be
+      // mapped onto our tool_use blocks.
+      if (tc.type !== "function") continue;
       blocks.push({
         type: "tool_use",
         id: tc.id,

@@ -1,10 +1,15 @@
-import { useEffect, useRef, useState } from "react";
-import { socket } from "../socket";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { isDemoMode, socket } from "../socket";
+import { api } from "../api";
+import { DEMO_DIAGNOSIS, MOCK_DIFF } from "../data/demo";
 
 interface Msg {
   role: "user" | "assistant";
   text: string;
 }
+
+const CHUNK = 32; // chars per demo tick — fast enough to read as live streaming
+const TICK_MS = 16;
 
 export default function AgentPanel() {
   const [messages, setMessages] = useState<Msg[]>([
@@ -15,17 +20,24 @@ export default function AgentPanel() {
   ]);
   const [draft, setDraft] = useState("");
   const [running, setRunning] = useState(false);
+  const [demoReady, setDemoReady] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const demoTimers = useRef<number[]>([]);
 
+  const clearDemoTimers = useCallback(() => {
+    for (const id of demoTimers.current) window.clearTimeout(id);
+    demoTimers.current = [];
+  }, []);
+
+  useEffect(() => clearDemoTimers, [clearDemoTimers]);
+
+  // Live agent stream (socket.io). In demo mode `socket` is null, so this
+  // never attaches and nothing reaches the network.
   useEffect(() => {
-    if (!socket) return; // no token — cockpit is behind LoginPage, no socket
+    if (!socket) return; // no token / demo mode — cockpit falls back to local data
     const s = socket; // local alias so the cleanup closure sees a non-null socket
     const onToken = (tok: string) => {
       setMessages((m) => {
-        const last = m[m.length - 1];
-        if (last?.role === "assistant" && last.text !== "__streaming__") {
-          // Continuation of the streaming block already finalized below.
-        }
         const copy = [...m];
         const lastMsg = copy[copy.length - 1];
         if (lastMsg?.role === "assistant") {
@@ -54,9 +66,35 @@ export default function AgentPanel() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [messages]);
 
+  /** Stream the canned diagnosis locally — no socket, no fetch, deterministic. */
+  const streamDemoRun = () => {
+    clearDemoTimers();
+    setDemoReady(false);
+    const text = DEMO_DIAGNOSIS;
+    const chunks = Math.ceil(text.length / CHUNK);
+    for (let i = 1; i <= chunks; i++) {
+      const id = window.setTimeout(() => {
+        setMessages((m) => {
+          const copy = [...m];
+          const last = copy[copy.length - 1];
+          if (!last || last.role !== "assistant") return copy;
+          copy[copy.length - 1] = { ...last, text: text.slice(0, i * CHUNK) };
+          return copy;
+        });
+        if (i === chunks) {
+          setRunning(false);
+          setDemoReady(true);
+        }
+      }, i * TICK_MS);
+      demoTimers.current.push(id);
+    }
+  };
+
   const send = () => {
     const prompt = draft.trim();
-    if (!prompt || running || !socket) return;
+    if (!prompt || running) return;
+    if (!isDemoMode && !socket) return;
+
     setMessages((m) => [
       ...m,
       { role: "user", text: prompt },
@@ -64,7 +102,27 @@ export default function AgentPanel() {
     ]);
     setDraft("");
     setRunning(true);
-    socket.emit("agent:run", { prompt });
+
+    if (isDemoMode) {
+      streamDemoRun();
+      return;
+    }
+    socket?.emit("agent:run", { prompt });
+  };
+
+  /** Demo-only shortcut: turn the streamed diagnosis into the mock proposal. */
+  const saveProposal = async () => {
+    try {
+      const p = await api.createProposal({
+        runId: "run_demo_0001",
+        diff: MOCK_DIFF,
+        target: "deploy/worker-queue.yaml",
+      });
+      window.dispatchEvent(new CustomEvent("aiops:open-proposals"));
+      alert(`Proposal created: ${p.id}`);
+    } catch (e) {
+      alert("Failed: " + (e instanceof Error ? e.message : String(e)));
+    }
   };
 
   return (
@@ -116,6 +174,17 @@ export default function AgentPanel() {
           );
         })}
       </div>
+
+      {isDemoMode && demoReady && !running && (
+        <div className="border-t border-zinc-800 px-3 pt-3">
+          <button
+            onClick={() => void saveProposal()}
+            className="w-full rounded-md bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+          >
+            Save as proposal
+          </button>
+        </div>
+      )}
 
       <div className="flex gap-2 border-t border-zinc-800 p-3">
         <input

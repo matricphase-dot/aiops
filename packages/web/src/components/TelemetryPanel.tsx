@@ -1,5 +1,5 @@
 import { useStore } from "../store";
-import { socket } from "../socket";
+import { isDemoMode, socket } from "../socket";
 import type { NodeStatus } from "../types";
 
 const DOT: Record<NodeStatus, string> = {
@@ -20,15 +20,21 @@ export default function TelemetryPanel() {
         <h1 className="text-xs font-semibold tracking-[0.2em] text-zinc-400">
           TELEMETRY
         </h1>
-        <span
-          className={
-            connected
-              ? "rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400 ring-1 ring-emerald-500/30"
-              : "rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-500 ring-1 ring-amber-500/30"
-          }
-        >
-          {connected ? "LIVE" : "MOCK"}
-        </span>
+        {isDemoMode ? (
+          <span className="rounded bg-sky-600 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+            DEMO
+          </span>
+        ) : (
+          <span
+            className={
+              connected
+                ? "rounded bg-emerald-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400 ring-1 ring-emerald-500/30"
+                : "rounded bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-semibold text-amber-500 ring-1 ring-amber-500/30"
+            }
+          >
+            {connected ? "LIVE" : "OFFLINE"}
+          </span>
+        )}
       </header>
 
       <ul className="flex-1 overflow-y-auto p-2">

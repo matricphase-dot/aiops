@@ -49,7 +49,9 @@ export default function App() {
           </Canvas>
           
           <div className="pointer-events-none absolute left-3 top-3 text-xs text-neutral-500">
-            gestures: pinch = zoom · wrist x = rotate · point = select
+            {isDemoMode
+              ? "drag to orbit · scroll to zoom · click a node"
+              : "gestures: pinch = zoom · wrist x = rotate · point = select"}
           </div>
         </main>
 
