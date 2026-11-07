@@ -1,32 +1,29 @@
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.XAI_API_KEY || process.env.OPENAI_API_KEY,
-  baseURL: "https://api.x.ai/v1", // Grok API endpoint
+  apiKey: (process.env.XAI_API_KEY || process.env.OPENAI_API_KEY || "") as string,
+  baseURL: "https://api.x.ai/v1",
 });
 
 export interface ChatMsg { role: "user" | "assistant"; content: any; }
 
 export async function callClaude(opts: {
   system: string;
-  messages: ChatMsg[];
+  messages: any[]; // Relaxed type to avoid TS strictness errors
   tools?: any[];
   maxTokens?: number;
 }) {
-  // Translate Anthropic tools to OpenAI tools
   const openAITools = opts.tools?.map((t: any) => ({
-    type: "function",
+    type: "function" as const,
     function: {
-      name: t.name,
-      description: t.description,
-      parameters: t.input_schema,
+      name: String(t.name),
+      description: String(t.description),
+      parameters: (t.input_schema as any) || {},
     },
   }));
 
-  // Translate messages
   const openAIMessages = opts.messages.map((m: any) => {
     if (typeof m.content === "string") return { role: m.role, content: m.content };
-    // Flatten Anthropic array blocks to string for Grok
     const text = Array.isArray(m.content)
       ? m.content.filter((b: any) => b.type === "text").map((b: any) => b.text).join("\n")
       : String(m.content);
@@ -34,23 +31,22 @@ export async function callClaude(opts: {
   });
 
   const res = await client.chat.completions.create({
-    model: process.env.LLM_MODEL ?? "grok-beta",
+    model: (process.env.LLM_MODEL ?? "grok-beta") as string,
     max_tokens: opts.maxTokens ?? 2048,
     messages: [
       { role: "system", content: opts.system },
       ...openAIMessages,
-    ],
-    tools: openAITools && openAITools.length > 0 ? openAITools : undefined,
+    ] as any,
+    tools: openAITools as any,
   });
 
   const choice = res.choices[0].message;
-  
-  // Convert OpenAI response back to Anthropic format so graph.ts doesn't break
+
   const blocks: any[] = [];
   if (choice.content) {
     blocks.push({ type: "text", text: choice.content });
   }
-  
+
   if (choice.tool_calls) {
     for (const tc of choice.tool_calls) {
       blocks.push({
